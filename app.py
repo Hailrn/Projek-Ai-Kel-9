@@ -8,37 +8,34 @@ import model.kmeans as kmeans_clustering
 app = Flask(__name__)
 
 
-print("--- [Server] Memuat Data dan Melatih Model AI... ---")
+print("--- [Server] Memuat Data... ---")
 
 try:
-    # Load Data
-    df = pd.read_csv('Data_Kuliner_Fasilkom_Cleaned.csv')
-    
-    # Jalankan K-Means
-    df = kmeans_clustering.run_clustering(df, n_clusters=3)
+        # Memuat data yang sudah di-cluster sebelumnya
+        df = pd.read_csv('Data/data_berlabel.csv')
     
     # Jalankan Fuzzy Logic
-    df = fuzzy_logic.apply_fuzzy_scoring(df)
+        df = fuzzy_logic.apply_fuzzy_scoring(df)
     
     # --- PERSIAPAN DATA UNTUK BOT & TAMPILAN ---
   
-    df['Biaya_Angka'] = pd.to_numeric(df['Biaya'], errors='coerce').fillna(0)
+        df['Biaya_Angka'] = pd.to_numeric(df['Biaya'], errors='coerce').fillna(0)
 
-    # 2. Format Tampilan (misal: "Rp 15,000") untuk Website
-    df['Biaya_Format'] = df['Biaya_Angka'].apply(lambda x: f"Rp {int(x):,}")
-    
-    # 3. Bulatkan Fuzzy Score
-    df['Fuzzy_Score'] = df['Fuzzy_Score'].round(1)
+        # 2. Format Tampilan (misal: "Rp 15,000") untuk Website
+        df['Biaya_Format'] = df['Biaya_Angka'].apply(lambda x: f"Rp {int(x):,}")
+        
+        # 3. Bulatkan Fuzzy Score
+        df['Fuzzy_Score'] = df['Fuzzy_Score'].round(1)
     
     # 4. Labeling Cluster
-    def label_cluster(row):
-        if row['Cluster'] == 0: return "Hemat & Enak"
-        if row['Cluster'] == 1: return "Premium/Nongkrong"
-        return "Standar/Harian"
-    
-    df['Cluster_Label'] = df.apply(label_cluster, axis=1)
+        def label_cluster(row):
+            if row['Cluster'] == 0: return "Hemat & Enak"
+            if row['Cluster'] == 1: return "Premium/Nongkrong"
+            return "Standar/Harian"
+        
+        df['Cluster_Label'] = df.apply(label_cluster, axis=1)
 
-    print("--- [Server] Data Siap! ---")
+        print("--- [Server] Data Siap! ---")
 
 except Exception as e:
     print(f"Error Loading Data: {e}")
@@ -57,11 +54,10 @@ def get_bot_response(user_msg):
         if "rekomendasi" in msg or "saran" in msg or "makan apa" in msg:
             top_3 = df.sort_values(by='Fuzzy_Score', ascending=False).head(3)
             names = top_3['Tempat_Makan'].tolist()
-            return f"Halo! Berdasarkan AI, 3 tempat terbaik adalah: <b>{', '.join(names)}</b>."
+            return f"Halo! Berikut tempat 3 tempat rekomendasi: <b>{', '.join(names)}</b>."
 
         # B. User cari yang MURAH (Logic pakai Biaya_Angka)
         elif "murah" in msg or "hemat" in msg:
-            # Cari yang harganya <= 15.000
             cheap = df[df['Biaya_Angka'] <= 15000].sort_values(by='Fuzzy_Score', ascending=False).head(3)
             names = cheap['Tempat_Makan'].tolist()
             if not names: return "Waduh, belum nemu yang murah banget nih."
@@ -88,9 +84,6 @@ def get_bot_response(user_msg):
         print(f"Bot Error: {e}")
         return "Maaf, otak saya sedang error sedikit."
 
-# ==========================================
-# 3. ROUTE / HALAMAN WEB
-# ==========================================
 
 @app.route('/')
 def index():

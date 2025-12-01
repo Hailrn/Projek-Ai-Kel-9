@@ -1,39 +1,40 @@
 import pandas as pd
+import os
 
-def clean_data(input_path='../Data/data_dari_form.csv', output_path='../Data/data_bersih.csv'):
-    """
-    Membersihkan data dari file CSV mentah dan menyimpannya sebagai file CSV yang sudah bersih.
+# --- PENGATURAN PATH OTOMATIS ---
+# Mendapatkan path absolut ke direktori tempat script ini berada (yaitu, .../model)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Mendapatkan path ke direktori root proyek (satu tingkat di atas /model)
+project_root = os.path.dirname(script_dir)
+# Membuat path absolut ke direktori Data
+data_dir = os.path.join(project_root, 'Data')
 
-    Args:
-        input_path (str): Path ke file CSV mentah.
-        output_path (str): Path untuk menyimpan file CSV yang sudah bersih.
-    """
-    # Baca dataset
-    df = pd.read_csv(input_path)
 
-    # Ganti nama kolom
-    df.columns = [
-        'Timestamp', 'Nama', 'Gender', 'Tempat_Makan', 'Porsi',
-        'Biaya', 'Jarak_Meter', 'Rating_Rasa', 'Rating_Nyaman', 'Wifi',
-        'Colokan', 'Waktu_Tunggu', 'Kategori_Harga', 'Rekomendasi', 'Nama_warung_lainnya'
-    ]
+def clean_data(input_path, output_path):
+    try:
+        df = pd.read_csv(input_path)
+    except FileNotFoundError:
+        print(f"ERROR: File input tidak ditemukan di path: {input_path}")
+        print("Pastikan file 'data_mentah.csv' ada di dalam direktori 'Data'.")
+        return
 
-    # Ganti nilai 'Lainnya' di 'Tempat_Makan' dengan nilai dari 'Nama_warung_lainnya'
-    df['Tempat_Makan'] = df.apply(
-        lambda row: row['Nama_warung_lainnya'] if row['Tempat_Makan'] == 'Lainnya' else row['Tempat_Makan'],
-        axis=1
-    )
-    
+    # CATATAN: Logika untuk mengubah nama kolom dan memproses 'Nama_warung_lainnya',
+    # 'Timestamp', dan 'Nama' telah dihapus karena kolom-kolom tersebut
+    # tidak ada di file 'Data/data_mentah.csv' yang sekarang.
+    # Sepertinya file tersebut sudah melalui pembersihan sebelumnya.
+
     # Hapus spasi di awal dan akhir dari 'Tempat_Makan'
-    df['Tempat_Makan'] = df['Tempat_Makan'].str.strip()
-
-    # Hapus kolom yang tidak diperlukan
-    df = df.drop(columns=['Timestamp', 'Nama', 'Nama_warung_lainnya'])
+    if 'Tempat_Makan' in df.columns:
+        df['Tempat_Makan'] = df['Tempat_Makan'].str.strip()
 
     # Simpan dataframe yang sudah bersih ke file CSV
     df.to_csv(output_path, index=False)
     print(f"Data bersih telah disimpan di {output_path}")
 
 if __name__ == '__main__':
+    # Menentukan path input dan output secara dinamis
+    input_file = os.path.join(data_dir, 'data_mentah.csv')
+    output_file = os.path.join(data_dir, 'data_bersih.csv')
+    
     # Menjalankan fungsi clean_data
-    clean_data(input_path='../Data/data_dari_form.csv', output_path='../Data/data_bersih.csv')
+    clean_data(input_path=input_file, output_path=output_file)
